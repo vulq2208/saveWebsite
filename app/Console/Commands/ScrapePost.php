@@ -2,9 +2,16 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
+
 use DB;
 use Goutte\Client;
+use Illuminate\Http\File;
+use App\Models\SaveWebsite;
+use Illuminate\Support\Str;
+use Illuminate\Console\Command;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManagerStatic as Image;
 
 class ScrapePost extends Command
 {
@@ -38,31 +45,42 @@ class ScrapePost extends Command
      * @return int
      */
 
-     public function myFunction() {
+     public function takeData() {
+
+
         $client = new Client();
         $crawler = $client->request('GET', 'https://vnexpress.net/man-utd-vs-newcastle-4575086-tong-thuat.html');
         $imageUrls = $crawler->filter('picture img')->first()->attr('data-src');
         $title = $crawler->filter('.title-detail')->text();
         $content = $crawler->filter('.Normal')->first()->text();
 
-        $create = DB::table('save_websites')->insert([
 
+        //Save Image
+        $imageContent = file_get_contents($imageUrls);
+        $image = imagecreatefromstring($imageContent);
+        $randomImageName = Str::random(10) . '.jpg';
+        $imagePath = public_path('images/' . $randomImageName);
+        imagejpeg($image, $imagePath);
+
+
+
+        // //Create Data
+       $createData =  SaveWebsite::create([
             'title' => $title,
             'content' => $content,
-            'picture' => $imageUrls,
+            'picture' => $randomImageName,
             'created_at' => now(),
             'updated_at' => now()
-
         ]);
 
-       if($create) {
+       if($createData) {
         $this->info('Lấy dữ liệu thành công!');
        }
     }
 
     public function handle()
     {
-        $this->myFunction();
+        $this->takeData();
     }
 
 }
