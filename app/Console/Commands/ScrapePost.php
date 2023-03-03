@@ -57,10 +57,8 @@ class ScrapePost extends Command
 
         //Save Image
         $imageContent = file_get_contents($imageUrls);
-        $image = imagecreatefromstring($imageContent);
         $randomImageName = Str::random(10) . '.jpg';
-        $imagePath = public_path('images/' . $randomImageName);
-        imagejpeg($image, $imagePath);
+        $storedImage = Storage::put('images/'.$randomImageName,$imageContent);
 
 
 

@@ -22,6 +22,7 @@ class CreateCompaniesTable extends Migration
             $table->string('company_field');
             $table->text('company_introduce')->nullable();
             $table->string('company_evaluate')->nullable();
+            $table->string('company_url_iframe')->nullable();
             $table->timestamps();
         });
     }

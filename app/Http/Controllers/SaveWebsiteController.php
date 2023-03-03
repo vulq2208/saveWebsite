@@ -2,10 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use DB;
+
 use App\Models\SaveWebsite;
 use Illuminate\Http\Request;
-use Weidner\Goutte\GoutteFacade;
+use DB;
+use Goutte\Client;
+use Illuminate\Http\File;
+use App\Models\CompanyJobs;
+use App\Models\Company;
+use Illuminate\Support\Str;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManagerStatic as Image;
 
 
 class SaveWebsiteController extends Controller

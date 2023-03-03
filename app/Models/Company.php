@@ -19,6 +19,7 @@ class Company extends Model
         'company_field',
         'company_introduce',
         'company_evaluate',
+        'company_url_iframe',
     ];
 
     public function jobs() {

@@ -22,7 +22,7 @@ class CreateCompanyJobsTable extends Migration
             $table->string('requirements');
             $table->string('education');
             $table->text('description');
-            $table->unsignedBigInteger('company_id')->unsigned();
+            $table->unsignedBigInteger('company_id')->unsigned()->nullable();
             $table->foreign('company_id')
             ->references('id')
             ->on('companies')->onDelete('cascade');

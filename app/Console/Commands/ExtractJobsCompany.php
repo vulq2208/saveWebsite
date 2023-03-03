@@ -62,7 +62,7 @@ class ExtractJobsCompany extends Command
         $experience = $textSpan[5];
         $gender = $textSpan[1];
         $education = $textSpan[7];
-        $companyFirst = Company::first();
+        $companyLatest = Company::latest('id')->value('id');
 
         $createJobs = CompanyJobs::create([
             'form' => $form,
@@ -71,7 +71,7 @@ class ExtractJobsCompany extends Command
             'requirements' => $requirements,
             'education' => $education,
             'description' => $description,
-            'company_id' => $companyFirst->id,
+            'company_id' => $companyLatest,
         ]);
 
     }
@@ -80,44 +80,108 @@ class ExtractJobsCompany extends Command
 
         $client = new Client();
         $crawler = $client->request('GET', 'https://alojob.vn/viec-lam/can-tuyen-nhan-vien-pg-cho-cong-ty-co-phan-diligo-holdings-72556');
-        $iframe = $crawler->filter('iframe')->first();
-        $iframeSrc = $iframe->extract(['src'])[0];
-        $crawler = $client->request('GET', $iframeSrc);
         $company_name = $crawler->filter('.fb-profile-text p a')->text();
-
-        $imageUrls = $crawler->filter('.fb-profile img')->last()->attr('src');
-        $fullUrl = env('URL_WEBSITE') . $imageUrls;
-
-        $imageContent = file_get_contents($fullUrl);
-        $image = imagecreatefromstring($imageContent);
-        $company_logo = Str::random(10) . '.jpg';
-        $imagePath = public_path('images/' . $company_logo);
-        imagejpeg($image, $imagePath);
-
         $company_status = $crawler->filter('.panel-default .form-group .text-success ')->text();
         $company_field = $crawler->filter('.panel-default .form-group span')->each(function ($node){
             return $node->text();
         })[2];
 
-        $createCompany = Company::create([
+        $imageUrls = $crawler->filter('.fb-profile img')->last()->attr('src');
+        $fullUrl = env('URL_WEBSITE') . $imageUrls;
+        $imageContent = file_get_contents($fullUrl);
+        $company_logo = Str::random(10) . '.jpg';
+        $storedImage = Storage::put('images/'.$company_logo,$imageContent);
+
+        Company::create([
             'company_name' => $company_name,
             'company_logo' => $company_logo,
             'company_status' => $company_status,
             'company_field'  => $company_field,
         ]);
 
-        if(!empty($createCompany)) {
         $this->info("Thành Công!");
-         }
 
 
+    }
+
+
+    public function extractsJobs () {
+        $client = new Client();
+        $crawler = $client->request('GET', 'https://alojob.vn/tim-kiem/viec-lam-phuc-vu');
+        $getElementLinks = $crawler->filter('.shadow .col-md-12 .col-md-6 .cont-item  a')->each(function ($node) use ($client) {
+            $url = $node->link()->getUri();
+            $subCrawler = $client->request('GET', $url);
+
+            $iframe = $subCrawler->filter('iframe')->first();
+            $iframe->each(function ($iframeNode)  use ($client , $subCrawler) {
+                $form = $subCrawler->filter('label:contains("Hình thức:")')->first()->nextAll()->filter('p')->first()->text();
+                $requirements = $subCrawler->filter('p:contains("Yêu cầu chung:")')->first()->nextAll()->filter('p')->first()->text();
+                $description = $subCrawler->filter('label:contains("Mô tả công việc:")')->first()->nextAll()->filter('p')->first()->text();
+                $experience = $subCrawler->filter('span:contains("Kinh nghiệm:")')->first()->nextAll()->filter('span')->first()->text();
+                $gender = $subCrawler->filter('span:contains("Giới tính: ")')->first()->nextAll()->filter('span')->first()->text();
+                $education = $subCrawler->filter('span:contains("Học vấn:")')->first()->nextAll()->filter('span')->first()->text();
+                $src = $iframeNode->attr('src');
+                $urlIframeCompanys = Company::where('company_url_iframe',$src)->get();
+                foreach ($urlIframeCompanys as $urlIframeCompany) {
+                    if($urlIframeCompany->company_url_iframe == $src) {
+                        $createJobs = CompanyJobs::create([
+                            'form' => $form,
+                            'experience' => $experience,
+                            'gender' => $gender,
+                            'requirements' => $requirements,
+                            'education' => $education,
+                            'description' => $description,
+                            'company_id' => $urlIframeCompany->id,
+                        ]);
+                    }
+                }
+            });
+
+        });
+    }
+
+    public function extractsCompany() {
+        $client = new Client();
+        $crawler = $client->request('GET', 'https://alojob.vn/tim-kiem/viec-lam-phuc-vu');
+        $crawler->filter('.shadow .col-md-12 .col-md-6 .cont-item  a')->each(function ($node) use ($client) {
+            $url = $node->link()->getUri();
+            $subCrawler = $client->request('GET', $url);
+            $iframe = $subCrawler->filter('iframe')->first();
+            $iframe->each(function ($iframeNode)  use ($client) {
+                $src = $iframeNode->attr('src');
+                if ($src){
+                    $crawlerCompanyList = $client->request('GET', $src);
+                    $company_name = $crawlerCompanyList->filter('.fb-profile-text p a')->text();
+                    $imageUrls = $crawlerCompanyList->filter('.fb-profile img')->last()->attr('src');
+                    $fullUrl = env('URL_WEBSITE') . $imageUrls;
+                    $imageContent = file_get_contents($fullUrl);
+                    $company_logo = Str::random(10) . '.jpg';
+                    $storedImage = Storage::put('images/'.$company_logo,$imageContent);
+                    $company_status = $crawlerCompanyList->filter('.panel-default .form-group .text-success ')->text();
+                    $company_field = $crawlerCompanyList->filter('.panel-default .form-group span')->each(function ($node){
+                        return $node->text();
+                    })[2];
+                    $createCompany = Company::create([
+                        'company_name' => $company_name,
+                        'company_logo' => $company_logo,
+                        'company_status' => $company_status,
+                        'company_field'  => $company_field,
+                        'company_url_iframe' => $src,
+                    ]);
+                }
+            });
+        });
 
     }
 
     public function handle()
     {
-        $this->extractCompany();
-        $this->extractJobs();
+        // $this->extractCompany();
+        // $this->extractJobs();
+
+        $this->extractsCompany();
+        $this->extractsJobs();
+
 
 
     }
