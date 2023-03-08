@@ -91,6 +91,20 @@ return [
             'prefix_indexes' => true,
         ],
 
+        'wordpress' => [
+            'driver' => 'mysql',
+            'host' => env('WP_DB_HOST', '127.0.0.1'),
+            'port' => env('WP_DB_PORT', '3306'),
+            'database' => env('WP_DB_DATABASE', 'internAdmin'),
+            'username' => env('WP_DB_USERNAME', 'root'),
+            'password' => env('WP_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => 'wp_',
+            'strict' => true,
+            'engine' => null,
+        ],
+
     ],
 
     /*
