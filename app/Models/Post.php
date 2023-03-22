@@ -1,12 +1,43 @@
 <?php
 
-
 namespace App\Models;
 
-use Corcel\Model\Post as Corcel;
-
-class Post extends Corcel
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\User;
+use App\Models\Category;
+class Post extends Model
 {
-    protected $connection = 'wordpress';
-    // protected $table = 'wp_posts';
+    use SoftDeletes;
+	protected $dates = ['deleted_at'];
+
+    protected $fillable = [
+        'author_id', 
+        'category_id', 
+        'title', 
+        'seo_title',
+        'excerpt',
+        'body',
+        'slug',
+        'image',
+        'meta_description',
+        'view',
+        'status',
+        'source',
+        'featured',
+        'created_at',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+     
+
 }
