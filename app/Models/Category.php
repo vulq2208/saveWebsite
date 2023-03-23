@@ -6,6 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 {
 
 
+
+    protected $fillable = [
+        'parent_id',
+        'name',
+        'slug',
+        'order',
+    ];
+
     /**
      * Get all of the posts for the user.
      */
@@ -18,6 +26,6 @@ use Illuminate\Database\Eloquent\Model;
     {
         return $this->belongsTo(self::class);
     }
-     
-     	
+
+
 }
