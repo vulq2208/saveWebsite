@@ -40,11 +40,12 @@ class ExtractCategoryPost extends Command
     *  Author : Sap
     *  Date Create : 24/03
     *  Description : Create Category
-    *  Parameter :
-    *  Return :
+    *  Parameter :url, slug, name, parent_id, order
+    *  Return : create Category, lastCategoryId
     */
     public function extractCategory()
     {
+
         $client = new Client();
         $crawler = $client->request('GET', 'https://people.com/parents/hoda-kotb-absent-from-today-as-she-spends-spring-break-with-daughters-after-hope-health-scare/');
 
@@ -57,9 +58,8 @@ class ExtractCategoryPost extends Command
         for ($i = 0; $i < count($getURl); $i++) {
             $url = $getURl[$i];
             $crawler = $client->request('GET', $url);
-            $getUri = $crawler->getUri();
-            $slug = basename(parse_url($getUri, PHP_URL_PATH));
             $dataName = $crawler->filter('.mntl-taxonomysc-header-group h1')->text();
+            $slug = Str::slug($dataName);
 
             $existCategory = Category::where('slug', $slug)->first();
 
@@ -77,16 +77,22 @@ class ExtractCategoryPost extends Command
                 $existCategory->order = 123;
                 $existCategory->save();
                 $category[] = $existCategory;
+
+
             }
         }
+        $lastCategoryIndex = count($category) - 1;
+        $lastCategoryId = $category[$lastCategoryIndex]->id;
+
+        return $lastCategoryId;
 
     }
     /*
     *  Author : Sap
-    *  Date Create : 24/03
+    *  Date Create : 27/03
     *  Description : Create Post
-    *  Parameter :
-    *  Return :
+    *  Parameter :slug, currentUrl, stringBody, file_name, categoryLast
+    *  Return : create Post
     */
     public function extractPost()
     {
@@ -97,32 +103,28 @@ class ExtractCategoryPost extends Command
             return $node->text();
         });
         $slug = Str::slug($title);
-        $currentUrl = $crawler->getCurrentURL();
+        $currentUrl = $client->getHistory()->current()->getUri();
         $stringBody = implode(", ", $body);
         $imageUrl = $crawler->filter('.primary-image__media img')->first()->attr('src');
         $slugImage = Str::slug(pathinfo($imageUrl, PATHINFO_FILENAME));
         $file_name = $slugImage . '.' . pathinfo($imageUrl, PATHINFO_EXTENSION);
-
+        $categoryLast = $this->extractCategory();
         if (!Storage::exists('images/' . $file_name)) {
             $imageContent = file_get_contents($imageUrl);
             Storage::put('images/' . $file_name, $imageContent);
         }
-
-        $lastCategory = Category::latest('id')->value('id');
-
         Post::create([
 
             'author_id' => 1,
-            'category_id'=> $lastCategory,
+            'category_id'=> $categoryLast,
             'title'    => $title,
             'body'   => $stringBody,
             'image' => $file_name,
             'slug' => $slug,
             'status' => 1,
             'featured'=> 0,
-            'source' => 123,
+            'source' => $currentUrl,
         ]);
-        echo $currentUrl;
     }
     /**
      * Execute the console command.
