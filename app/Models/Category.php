@@ -19,13 +19,12 @@ use Illuminate\Database\Eloquent\Model;
      */
     public function posts()
     {
-        return $this->hasMany('App\Models\Post');
+         return $this->belongsToMany(Post::class, 'category_posts');
     }
 
      public function parentId()
     {
         return $this->belongsTo(self::class);
     }
-
 
 }

@@ -2,13 +2,14 @@
 
 namespace App\Console\Commands;
 
+use Goutte\Client;
+use App\Models\Post;
+use App\Models\Category;
+use Illuminate\Support\Str;
+use App\Models\CategoryPost;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
-use Goutte\Client;
-use App\Models\Category;
-use App\Models\Post;
-use Illuminate\Support\Str;
 
 class ExtractCategoryPost extends Command
 {
@@ -38,10 +39,10 @@ class ExtractCategoryPost extends Command
 
     /*
     *  Author : Sap
-    *  Date Create : 24/03
+    *  Date Create : 24/03/2023
     *  Description : Create Category
-    *  Parameter :url, slug, name, parent_id, order
-    *  Return : create Category, lastCategoryId
+    *  Parameter :
+    *  Return : create Category, $categoryIds
     */
     public function extractCategory()
     {
@@ -49,11 +50,11 @@ class ExtractCategoryPost extends Command
         $client = new Client();
         $crawler = $client->request('GET', 'https://people.com/parents/hoda-kotb-absent-from-today-as-she-spends-spring-break-with-daughters-after-hope-health-scare/');
 
-        $getURl = $crawler->filter('.mntl-breadcrumbs .mntl-breadcrumbs__item ')->each(function ($node) use ($client , $crawler) {
+        $getURl = $crawler->filter('.mntl-breadcrumbs .mntl-breadcrumbs__item')->each(function ($node) use ($client , $crawler) {
             return  $node->filter('a')->attr('href');
         });
 
-        $category = array();
+        $categoryIds = array();
 
         for ($i = 0; $i < count($getURl); $i++) {
             $url = $getURl[$i];
@@ -61,38 +62,26 @@ class ExtractCategoryPost extends Command
             $dataName = $crawler->filter('.mntl-taxonomysc-header-group h1')->text();
             $slug = Str::slug($dataName);
 
-            $existCategory = Category::where('slug', $slug)->first();
+            $newCategory = Category::updateOrCreate(['slug' => $slug], [
+                'parent_id' => ($i == 0) ? null : $category[$i - 1]->id,
+                'name' => $dataName,
+                'slug' => $slug,
+                'order' => 123,
+            ]);
 
-            if(!$existCategory) {
-                $newCategory = new Category;
-                $newCategory->parent_id = ($i == 0) ? null : $category[$i - 1]->id;
-                $newCategory->name = $dataName;
-                $newCategory->slug = $slug;
-                $newCategory->order = 123;
-                $newCategory->save();
-                $category[] = $newCategory;
-            } else {
-                $existCategory->parent_id = ($i == 0) ? null : $category[$i - 1]->id;
-                $existCategory->name = $dataName;
-                $existCategory->order = 123;
-                $existCategory->save();
-                $category[] = $existCategory;
-
-
-            }
+            $category[] = $newCategory;
+            $categoryIds[] = $newCategory->id;
         }
-        $lastCategoryIndex = count($category) - 1;
-        $lastCategoryId = $category[$lastCategoryIndex]->id;
 
-        return $lastCategoryId;
+        return $categoryIds;
 
     }
     /*
     *  Author : Sap
-    *  Date Create : 27/03
+    *  Date Create : 27/03/2023
     *  Description : Create Post
-    *  Parameter :slug, currentUrl, stringBody, file_name, categoryLast
-    *  Return : create Post
+    *  Parameter :
+    *  Return : create Post, create CategoryPost
     */
     public function extractPost()
     {
@@ -108,15 +97,13 @@ class ExtractCategoryPost extends Command
         $imageUrl = $crawler->filter('.primary-image__media img')->first()->attr('src');
         $slugImage = Str::slug(pathinfo($imageUrl, PATHINFO_FILENAME));
         $file_name = $slugImage . '.' . pathinfo($imageUrl, PATHINFO_EXTENSION);
-        $categoryLast = $this->extractCategory();
         if (!Storage::exists('images/' . $file_name)) {
             $imageContent = file_get_contents($imageUrl);
             Storage::put('images/' . $file_name, $imageContent);
         }
-        Post::create([
-
+        $post = Post::where('slug', $slug)->updateOrCreate([
             'author_id' => 1,
-            'category_id'=> $categoryLast,
+            'category_id'=> null,
             'title'    => $title,
             'body'   => $stringBody,
             'image' => $file_name,
@@ -125,6 +112,19 @@ class ExtractCategoryPost extends Command
             'featured'=> 0,
             'source' => $currentUrl,
         ]);
+
+        $postId = $post->id;
+
+        $categoryIds = $this->extractCategory();
+        foreach ($categoryIds as $categoryId) {
+            $exist = CategoryPost::where('category_id', $categoryId)->where('post_id', $postId)->first();
+            if (!$exist) {
+                CategoryPost::create([
+                    'category_id' => $categoryId,
+                    'post_id' => $postId,
+                ]);
+            }
+        }
     }
     /**
      * Execute the console command.
@@ -133,7 +133,6 @@ class ExtractCategoryPost extends Command
      */
     public function handle()
     {
-        $this->extractCategory();
         $this->extractPost();
     }
 }

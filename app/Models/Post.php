@@ -12,9 +12,9 @@ class Post extends Model
 	protected $dates = ['deleted_at'];
 
     protected $fillable = [
-        'author_id', 
-        'category_id', 
-        'title', 
+        'author_id',
+        'category_id',
+        'title',
         'seo_title',
         'excerpt',
         'body',
@@ -35,9 +35,10 @@ class Post extends Model
 
     public function category()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsToMany(category::class, 'category_posts');
     }
 
-     
+
+
 
 }
