@@ -58,6 +58,7 @@ class ExtractCategoryPost extends Command
 
         for ($i = 0; $i < count($getURl); $i++) {
             $url = $getURl[$i];
+            $lastUrl = end($getURl);
             $crawler = $client->request('GET', $url);
             $dataName = $crawler->filter('.mntl-taxonomysc-header-group h1')->text();
             $slug = Str::slug($dataName);
@@ -69,8 +70,57 @@ class ExtractCategoryPost extends Command
                 'order' => 123,
             ]);
 
+            $crawlerLast = $client->request('GET',$lastUrl);
+            $urlPosts = $crawlerLast->filter('.card--no-image')->each(function ($node) use ($client) {
+                return  $node->attr('href');
+            });
+
             $category[] = $newCategory;
             $categoryIds[] = $newCategory->id;
+
+        }
+
+        for($i = 0 ; $i < count($urlPosts); $i++) {
+            $urlPost = $urlPosts[$i];
+            $crawler = $client->request('GET', $urlPost);
+            $title = $crawler->filter(' .people-article .article-header h1')->text();
+            $slug = Str::slug($title);
+            $currentUrl = $client->getHistory()->current()->getUri();
+                $body =  $crawler->filter('.structured-content p')->each(function ($node){
+                    return $node->text();
+                });
+                $stringBody = implode(", ", $body);
+                $imageUrl = $crawler->filter('img')->first()->attr('src');
+                $slugImage = Str::slug(pathinfo($imageUrl, PATHINFO_FILENAME));
+                $file_name = $slugImage . '.' . pathinfo($imageUrl, PATHINFO_EXTENSION);
+                if (!Storage::exists('images/' . $file_name)) {
+                    $imageContent = file_get_contents($imageUrl);
+                    Storage::put('images/' . $file_name, $imageContent);
+                }
+
+                $post = Post::where('slug', $slug)->updateOrCreate([
+                    'author_id' => 1,
+                    'category_id'=> null,
+                    'title'    => $title,
+                    'body'   => $stringBody,
+                    'image' => $file_name,
+                    'slug' => $slug,
+                    'status' => 1,
+                    'featured'=> 0,
+                    'source' => $currentUrl,
+                ]);
+
+                $postId = $post->id;
+
+                foreach ($categoryIds as $categoryId) {
+                    $exist = CategoryPost::where('category_id', $categoryId)->where('post_id', $postId)->first();
+                    if (!$exist) {
+                        CategoryPost::updateOrCreate([
+                            'category_id' => $categoryId,
+                            'post_id' => $postId,
+                        ]);
+                    }
+                }
         }
 
         return $categoryIds;
@@ -88,6 +138,7 @@ class ExtractCategoryPost extends Command
         $client = new Client();
         $crawler = $client->request('GET', 'https://people.com/parents/hoda-kotb-absent-from-today-as-she-spends-spring-break-with-daughters-after-hope-health-scare/');
         $title = $crawler->filter(' .people-article .article-header h1')->text();
+
         $body =  $crawler->filter('.structured-content p')->each(function ($node){
             return $node->text();
         });
