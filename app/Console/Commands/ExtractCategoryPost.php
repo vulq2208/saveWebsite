@@ -93,9 +93,9 @@ class ExtractCategoryPost extends Command
                 $imageUrl = $crawler->filter('img')->first()->attr('src');
                 $slugImage = Str::slug(pathinfo($imageUrl, PATHINFO_FILENAME));
                 $file_name = $slugImage . '.' . pathinfo($imageUrl, PATHINFO_EXTENSION);
-                if (!Storage::exists('images/' . $file_name)) {
+                if (!Storage::exists('public/images/' . $file_name)) {
                     $imageContent = file_get_contents($imageUrl);
-                    Storage::put('images/' . $file_name, $imageContent);
+                    Storage::put('public/images/' . $file_name, $imageContent);
                 }
 
                 $post = Post::where('slug', $slug)->updateOrCreate([
@@ -124,7 +124,6 @@ class ExtractCategoryPost extends Command
         }
 
         return $categoryIds;
-
     }
     /*
     *  Author : Sap
@@ -148,9 +147,9 @@ class ExtractCategoryPost extends Command
         $imageUrl = $crawler->filter('.primary-image__media img')->first()->attr('src');
         $slugImage = Str::slug(pathinfo($imageUrl, PATHINFO_FILENAME));
         $file_name = $slugImage . '.' . pathinfo($imageUrl, PATHINFO_EXTENSION);
-        if (!Storage::exists('images/' . $file_name)) {
+        if (!Storage::exists('public/images/' . $file_name)) {
             $imageContent = file_get_contents($imageUrl);
-            Storage::put('images/' . $file_name, $imageContent);
+            Storage::put('public/images/' . $file_name, $imageContent);
         }
         $post = Post::where('slug', $slug)->updateOrCreate([
             'author_id' => 1,

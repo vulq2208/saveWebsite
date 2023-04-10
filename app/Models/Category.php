@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 {
 
 
-
+    protected $table = 'categories';
     protected $fillable = [
         'parent_id',
         'name',

@@ -1,0 +1,48 @@
+img {
+    width: 100%;
+}
+h1 {
+    margin-bottom: 0;
+}
+.celebrity {
+    text-transform: uppercase;
+    font-family: "Limerick Serial", Geneva, sans-serif;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+.celebrity a {
+    text-decoration: none;
+    color: #000;
+}
+.detail-post a:hover {
+    color: #000;
+    text-decoration: underline;
+}
+.celebrity a:hover {
+    color: #000;
+    text-decoration: underline;
+}
+.parent-celebrity h1 {
+    font-size: 3rem;
+    font-family: "Limerick Serial", Geneva, sans-serif;
+    font-weight: 700;
+}
+.parent {
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+.flex-center {
+    display: flex;
+    justify-content: center;
+}
+.titile {
+    font-family: "Limerick Serial", Geneva, sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    letter-spacing: 0.0313rem;
+}
+.card__title-text {
+    color: #000;
+    font-size: 26px;
+    font-weight: 700;
+}

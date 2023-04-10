@@ -1,8 +1,7 @@
 <?php
 
-use Weidner\Goutte\GoutteFacade;
+use App\Http\Controllers\ParentController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SaveWebsiteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,14 +12,7 @@ use App\Http\Controllers\SaveWebsiteController;
 | routes are loaded by the RouteServiceProvider within a group which
 | contains the "web" middleware group. Now create something great!
 |
-*/
+ */
 
-Route::get('/', function() {
-    $crawler = GoutteFacade::request('GET', 'https://dantri.com.vn/lao-dong-viec-lam/can-tho-f0-f1-bot-lo-lang-vi-khong-phai-tra-vien-phi-20210829181940605.htm');
-    $title = $crawler->filter('h1.dt-news__title')->each(function ($node) {
-        return $node->text();
-    })[0];
-    print($title);
-    return view('welcome');
-});
-Route::get('/get-saveWebsite', [SaveWebsiteController::class, 'getSaveWebsiteController']);
+Route::get('/{slug}', [ParentController::class, 'viewParent'])->name('parent-view');
+Route::get('/{slugParent}/{slug}', [ParentController::class, 'detailPost'])->name('post-view');
