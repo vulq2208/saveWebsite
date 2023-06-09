@@ -19,6 +19,7 @@
         "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
         "symfony/dom-crawler": "^5.4",
+        "tcg/voyager": "*",
         "weidner/goutte": "^2.2"
     },
     "require-dev": {
