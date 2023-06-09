@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
  */
+Route::get('/', function () {
+    return view('master');
+});
 Route::get('/{slug}/new', [ParentController::class, 'newPost'])->name('new-post');
 
 Route::get('/{slug}', [ParentController::class, 'viewParent'])->name('parent-view');
