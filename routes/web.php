@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('master');
 });
+
+Route::group(['prefix' => 'admin'], function () {
+    Voyager::routes();
+});
+
+
 Route::get('/{slug}/new', [ParentController::class, 'newPost'])->name('new-post');
 
 Route::get('/{slug}', [ParentController::class, 'viewParent'])->name('parent-view');
