@@ -1,9 +1,6 @@
 <?php
 
-
 namespace Corcel\Model\Meta;
-
-use Corcel\Model\User;
 
 class UserMeta extends Meta
 {
