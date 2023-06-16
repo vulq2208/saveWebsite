@@ -97,9 +97,6 @@ class WordpressLaravelApi extends Command
     public function createCategoriesWordpress()
     {
         $dataCategory = Category::get();
-        $lastTermId = DB::connection('wordpress')
-            ->table('terms')
-            ->max('term_id');
 
         foreach ($dataCategory as $category) {
             $slugExists = DB::connection('wordpress')
@@ -108,10 +105,8 @@ class WordpressLaravelApi extends Command
                 ->exists();
 
             if (!$slugExists) {
-                $newTermId = $lastTermId + 1;
 
                 $dataS = DB::connection('wordpress')->table('terms')->insert([
-                    'term_id' => $newTermId,
                     'name' => $category->name,
                     'slug' => $category->slug,
                     'term_group' => 0,
@@ -120,11 +115,7 @@ class WordpressLaravelApi extends Command
                 if ($dataS) {
                     echo "Success";
                 }
-            } else {
-                $newTermId = $lastTermId;
             }
-
-            $lastTermId = $newTermId;
         }
     }
 
