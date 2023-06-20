@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Category;
+use App\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\User;
-use App\Models\Category;
+
 class Post extends Model
 {
     use SoftDeletes;
-	protected $dates = ['deleted_at'];
+    protected $dates = ['deleted_at'];
 
     protected $fillable = [
         'author_id',
@@ -37,8 +38,5 @@ class Post extends Model
     {
         return $this->belongsToMany(Category::class, 'category_posts');
     }
-
-
-
 
 }

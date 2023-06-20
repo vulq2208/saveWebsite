@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\ParentController;
+use App\Models\Category;
 use Illuminate\Support\Facades\Route;
+use TCG\Voyager\Facades\Voyager;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,13 +16,26 @@ use Illuminate\Support\Facades\Route;
 |
  */
 Route::get('/', function () {
-    return view('master');
+    $categories = Category::get();
+
+    foreach ($categories as $category) {
+        // Retrieve posts for each category
+        $posts = $category->posts()->get();
+
+        foreach ($posts as $post) {
+            // Retrieve categories for each post
+            $postCategories = $post->categories()->get();
+
+            dd($postCategories); // Dump and die to inspect the retrieved categories
+
+        }
+    }
+
 });
 
 Route::group(['prefix' => 'admin'], function () {
     Voyager::routes();
 });
-
 
 Route::get('/{slug}/new', [ParentController::class, 'newPost'])->name('new-post');
 

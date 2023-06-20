@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Category;
+use App\Models\PostWordpress;
+use Corcel\Model\Taxonomy;
+use Corcel\Model\Term;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -80,63 +83,72 @@ class WordpressLaravelApi extends Command
     {
 
         $dataCategory = Category::find(62);
-        $postID = DB::connection('wordpress')
-            ->table('terms')
-            ->orderBy('term_id', 'desc')
-            ->first();
+        $latestTerm = Term::orderBy('term_id', 'desc')->first();
 
-        DB::connection('wordpress')->table('terms')->insert([
-            'term_id' => $postID->term_id + 1,
-            'name' => $dataCategory->name,
-            'slug' => $dataCategory->slug,
-            'term_group' => 0,
-        ]);
+        $newTerm = new Term();
+        $newTerm->term_id = $latestTerm->term_id + 1;
+        $newTerm->name = $dataCategory->name;
+        $newTerm->slug = $dataCategory->slug;
+        $newTerm->term_group = 0;
+        $newTerm->save();
 
     }
 
     public function createCategoriesWordpress()
     {
         $dataCategory = Category::get();
+
         foreach ($dataCategory as $category) {
-            $slugExists = DB::connection('wordpress')
-                ->table('terms')
-                ->where('slug', $category->slug)
-                ->exists();
+            $slugExists = Term::where('slug', $category->slug)->exists();
 
             if (!$slugExists) {
-                $createTerms = DB::connection('wordpress')->table('terms')->insert([
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'term_group' => 0,
-                ]);
+                $newTerm = new Term();
+                $newTerm->name = $category->name;
+                $newTerm->slug = $category->slug;
+                $newTerm->term_group = 0;
+                $newTerm->save();
 
-                if ($createTerms) {
+                if ($newTerm->exists) {
+                    $termTaxonomyExists = Taxonomy::where('term_id', $newTerm->term_id)->exists();
 
-                    $newTerm = DB::connection('wordpress')
-                        ->table('terms')
-                        ->where('slug', $category->slug)
-                        ->get();
+                    if (!$termTaxonomyExists) {
+                        $newTermTaxonomy = new Taxonomy();
+                        $newTermTaxonomy->term_id = $newTerm->term_id;
+                        $newTermTaxonomy->taxonomy = 'category';
+                        $newTermTaxonomy->description = '';
+                        $newTermTaxonomy->parent = 0;
+                        $newTermTaxonomy->count = 0;
+                        $newTermTaxonomy->save();
 
-                    foreach ($newTerm as $term) {
-
-                        $termIdExists = DB::connection('wordpress')
-                            ->table('term_taxonomy')
-                            ->where('term_id', $term->term_id)
-                            ->exists();
-
-                        if (!$termIdExists) {
-                            DB::connection('wordpress')->table('term_taxonomy')->insert([
-                                'term_id' => $term->term_id,
-                                'taxonomy' => 'category',
-                                'description' => '',
-                                'parent' => 0,
-                                'count' => 0,
-                            ]);
-                        }
                     }
+                }
+
+                $posts = $category->posts()->get();
+
+                foreach ($posts as $post) {
+                    $existingPost = PostWordpress::where('post_name', $post->slug)->first();
+                    if (!$existingPost) {
+                        $postWordpress = new PostWordpress;
+                        $postWordpress->post_title = $post->title;
+                        $postWordpress->post_content = $post->body;
+                        $postWordpress->post_status = 'publish';
+                        $postWordpress->post_excerpt = $post->excerpt ? $post->excerpt : "";
+                        $postWordpress->to_ping = '';
+                        $postWordpress->pinged = '';
+                        $postWordpress->post_name = $post->slug;
+                        $postWordpress->post_content_filtered = '';
+                        $postWordpress->save();
+
+                        $taxonomyId = $newTermTaxonomy->term_taxonomy_id;
+                        $postWordpress->taxonomies()->sync([$taxonomyId]);
+                    }
+
                 }
             }
         }
+
+        $this->info('Thành công');
+
     }
 
     public function handle()
@@ -145,6 +157,8 @@ class WordpressLaravelApi extends Command
         // $this->wordpressApiLaravel();
 
         $this->createCategoriesWordpress();
+
+        // $this->createPost();
 
     }
 }
